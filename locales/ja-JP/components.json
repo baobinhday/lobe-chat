@@ -1,4 +1,9 @@
 {
+  "ArgsInput": {
+    "addArgument": "引数を追加",
+    "argumentPlaceholder": "引数 {{index}}",
+    "enterFirstArgument": "最初の引数を入力してください..."
+  },
   "DragUpload": {
     "dragDesc": "ここにファイルをドラッグ＆ドロップしてください。複数の画像のアップロードがサポートされています。",
     "dragFileDesc": "ここに画像やファイルをドラッグ＆ドロップしてください。複数の画像やファイルのアップロードがサポートされています。",
@@ -45,6 +50,10 @@
     "total": {
       "fileCount": "合計 {{count}} 件",
       "selectedCount": "選択済み {{count}} 件"
+    },
+    "view": {
+      "list": "リスト表示",
+      "masonry": "グリッド表示"
     }
   },
   "FileParsingStatus": {
@@ -68,13 +77,26 @@
   "GoBack": {
     "back": "戻る"
   },
+  "HtmlPreview": {
+    "actions": {
+      "download": "ダウンロード",
+      "preview": "プレビュー"
+    },
+    "iframeTitle": "HTML プレビュー",
+    "mode": {
+      "code": "コード",
+      "preview": "プレビュー"
+    },
+    "title": "HTML プレビュー"
+  },
   "ImageUpload": {
     "actions": {
-      "changeImage": "クリックして画像を変更"
+      "changeImage": "画像を変更するにはクリックしてください",
+      "dropMultipleFiles": "複数ファイルの同時アップロードはサポートされていません。最初のファイルのみが使用されます。"
     },
     "placeholder": {
       "primary": "画像を追加",
-      "secondary": "クリックしてアップロード"
+      "secondary": "クリックまたはドラッグしてアップロード"
     }
   },
   "KeyValueEditor": {
@@ -96,6 +118,7 @@
       "reasoning": "このモデルは深い思考をサポートしています",
       "search": "このモデルはオンライン検索をサポートしています",
       "tokens": "このモデルは1つのセッションあたり最大{{tokens}}トークンをサポートしています。",
+      "video": "このモデルは動画認識に対応しています",
       "vision": "このモデルはビジョン認識をサポートしています。"
     },
     "removed": "選択されたモデルはリストから削除されました。選択を解除すると自動的に削除されます。"
@@ -109,7 +132,7 @@
   },
   "MultiImagesUpload": {
     "actions": {
-      "uploadMore": "さらにアップロード"
+      "uploadMore": "クリックまたはドラッグしてさらにアップロード"
     },
     "modal": {
       "complete": "完了",
@@ -119,11 +142,17 @@
       "upload": "画像をアップロード"
     },
     "placeholder": {
-      "primary": "クリックして画像をアップロード",
+      "primary": "クリックまたはドラッグして画像をアップロード",
       "secondary": "複数の画像を選択可能"
     },
     "progress": {
       "uploadingWithCount": "{{completed}}/{{total}} アップロード済み"
+    },
+    "validation": {
+      "fileSizeExceeded": "ファイルサイズが上限を超えています",
+      "fileSizeExceededDetail": "{{fileName}}（{{actualSize}}）は最大サイズ {{maxSize}} を超えています",
+      "fileSizeExceededMultiple": "{{count}} 個のファイルが最大サイズ {{maxSize}} を超えています：{{fileList}}",
+      "imageCountExceeded": "画像の数が上限を超えています"
     }
   },
   "OllamaSetupGuide": {

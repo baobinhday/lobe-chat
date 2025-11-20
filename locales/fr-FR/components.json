@@ -1,4 +1,9 @@
 {
+  "ArgsInput": {
+    "addArgument": "Ajouter un paramètre",
+    "argumentPlaceholder": "Paramètre {{index}}",
+    "enterFirstArgument": "Saisissez le premier paramètre..."
+  },
   "DragUpload": {
     "dragDesc": "Faites glisser des fichiers ici, plusieurs images peuvent être téléchargées.",
     "dragFileDesc": "Faites glisser des images et des fichiers ici, plusieurs images et fichiers peuvent être téléchargés.",
@@ -45,6 +50,10 @@
     "total": {
       "fileCount": "Total {{count}} éléments",
       "selectedCount": "Sélectionné {{count}} éléments"
+    },
+    "view": {
+      "list": "Vue en liste",
+      "masonry": "Vue en grille"
     }
   },
   "FileParsingStatus": {
@@ -68,13 +77,26 @@
   "GoBack": {
     "back": "Retour"
   },
+  "HtmlPreview": {
+    "actions": {
+      "download": "Télécharger",
+      "preview": "Aperçu"
+    },
+    "iframeTitle": "Aperçu HTML",
+    "mode": {
+      "code": "Code",
+      "preview": "Aperçu"
+    },
+    "title": "Aperçu HTML"
+  },
   "ImageUpload": {
     "actions": {
-      "changeImage": "Cliquez pour changer l'image"
+      "changeImage": "Cliquez pour changer l'image",
+      "dropMultipleFiles": "Le téléchargement multiple de fichiers n'est pas pris en charge, seul le premier fichier sera utilisé"
     },
     "placeholder": {
       "primary": "Ajouter une image",
-      "secondary": "Cliquez pour télécharger"
+      "secondary": "Cliquez ou faites glisser pour télécharger"
     }
   },
   "KeyValueEditor": {
@@ -96,6 +118,7 @@
       "reasoning": "Ce modèle prend en charge une réflexion approfondie",
       "search": "Ce modèle prend en charge la recherche en ligne",
       "tokens": "Ce modèle prend en charge jusqu'à {{tokens}} jetons par session.",
+      "video": "Ce modèle prend en charge la reconnaissance vidéo",
       "vision": "Ce modèle prend en charge la reconnaissance visuelle."
     },
     "removed": "Le modèle n'est pas dans la liste, il sera automatiquement supprimé si vous annulez la sélection"
@@ -109,7 +132,7 @@
   },
   "MultiImagesUpload": {
     "actions": {
-      "uploadMore": "Cliquez pour télécharger plus"
+      "uploadMore": "Cliquez ou glissez pour télécharger plus"
     },
     "modal": {
       "complete": "Terminé",
@@ -119,11 +142,17 @@
       "upload": "Télécharger des images"
     },
     "placeholder": {
-      "primary": "Cliquez pour télécharger des images",
+      "primary": "Cliquez ou glissez pour télécharger une image",
       "secondary": "Prise en charge de la sélection de plusieurs images"
     },
     "progress": {
       "uploadingWithCount": "{{completed}}/{{total}} téléchargées"
+    },
+    "validation": {
+      "fileSizeExceeded": "Taille du fichier dépassée",
+      "fileSizeExceededDetail": "{{fileName}} ({{actualSize}}) dépasse la taille maximale autorisée de {{maxSize}}",
+      "fileSizeExceededMultiple": "{{count}} fichiers dépassent la taille maximale autorisée de {{maxSize}} : {{fileList}}",
+      "imageCountExceeded": "Limite du nombre d'images dépassée"
     }
   },
   "OllamaSetupGuide": {

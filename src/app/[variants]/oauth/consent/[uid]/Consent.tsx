@@ -3,7 +3,7 @@
 import { Button, Text } from '@lobehub/ui';
 import { Card, Divider } from 'antd';
 import { createStyles } from 'antd-style';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Center, Flexbox } from 'react-layout-kit';
 
@@ -117,86 +117,72 @@ function getScopeDescription(scope: string, t: any): string {
   return t(`consent.scope.${scope.replace(':', '-')}`, scope);
 }
 
-const ConsentClient = memo<ClientProps>(
-  ({ uid, clientId, scopes, clientMetadata, redirectUri }) => {
-    const { styles, theme } = useStyles();
-    const { t } = useTranslation('oauth');
+const ConsentClient = memo<ClientProps>(({ uid, clientId, scopes, clientMetadata }) => {
+  const { styles } = useStyles();
+  const { t } = useTranslation('oauth');
 
-    const clientDisplayName = clientMetadata?.clientName || clientId;
-    return (
-      <Center className={styles.container} gap={16}>
-        <Flexbox gap={40}>
-          <OAuthApplicationLogo
-            clientDisplayName={clientDisplayName}
-            isFirstParty={clientMetadata.isFirstParty}
-            logoUrl={clientMetadata.logo}
-          />
-          <Text as={'h3'} className={styles.title}>
-            {t('consent.title', { clientName: clientDisplayName })}
-          </Text>
-        </Flexbox>
-        <Card className={styles.card}>
-          <Flexbox gap={8}>
-            <Flexbox gap={12}>
-              <Text>{t('consent.description', { clientName: clientDisplayName })}</Text>
+  const [isLoading, setIsLoading] = useState(false);
 
-              <div className={styles.scopes}>
-                <Text type={'secondary'}>{t('consent.permissionsTitle')}</Text>
-                {scopes.map((scope) => (
-                  <div className={styles.scope} key={scope}>
-                    <Text>{getScopeDescription(scope, t)}</Text>
-                  </div>
-                ))}
-              </div>
+  const clientDisplayName = clientMetadata?.clientName || clientId;
+  return (
+    <Center className={styles.container} gap={16}>
+      <Flexbox gap={40}>
+        <OAuthApplicationLogo
+          clientDisplayName={clientDisplayName}
+          isFirstParty={clientMetadata.isFirstParty}
+          logoUrl={clientMetadata.logo}
+        />
+        <Text as={'h3'} className={styles.title}>
+          {t('consent.title', { clientName: clientDisplayName })}
+        </Text>
+      </Flexbox>
+      <Card className={styles.card}>
+        <Flexbox gap={8}>
+          <Flexbox gap={12}>
+            <Text>{t('consent.description', { clientName: clientDisplayName })}</Text>
 
-              <Divider dashed />
-              <Flexbox gap={16}>
-                <form action="/oidc/consent" method="post" style={{ width: '100%' }}>
-                  <input name="uid" type="hidden" value={uid} />
-                  <Flexbox gap={12} horizontal>
-                    <Button
-                      className={styles.cancelButton}
-                      htmlType="submit"
-                      name="consent"
-                      value="deny"
-                    >
-                      {t('consent.buttons.deny')}
-                    </Button>
-                    <Button
-                      className={styles.authButton}
-                      htmlType="submit"
-                      name="consent"
-                      type="primary"
-                      value="accept"
-                    >
-                      {t('consent.buttons.accept')}
-                    </Button>
-                  </Flexbox>
-                </form>
-                <Center>
-                  <div style={{ color: theme.colorTextTertiary, fontSize: 12, height: '18px' }}>
-                    {t('consent.redirectUri')}
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        color: theme.colorTextSecondary,
-                        fontSize: 12,
-                        height: '18px',
-                      }}
-                    >
-                      {redirectUri}
-                    </div>
-                  </div>
-                </Center>
+            <div className={styles.scopes}>
+              <Text type={'secondary'}>{t('consent.permissionsTitle')}</Text>
+              {scopes.map((scope) => (
+                <div className={styles.scope} key={scope}>
+                  <Text>{getScopeDescription(scope, t)}</Text>
+                </div>
+              ))}
+            </div>
+
+            <Divider dashed />
+            <form action="/oidc/consent" method="post" style={{ width: '100%' }}>
+              <input name="uid" type="hidden" value={uid} />
+              <Flexbox gap={12} horizontal>
+                <Button
+                  className={styles.cancelButton}
+                  htmlType="submit"
+                  name="consent"
+                  value="deny"
+                >
+                  {t('consent.buttons.deny')}
+                </Button>
+                <Button
+                  className={styles.authButton}
+                  htmlType="submit"
+                  loading={isLoading}
+                  name="consent"
+                  onClick={() => {
+                    setIsLoading(true);
+                  }}
+                  type="primary"
+                  value="accept"
+                >
+                  {t('consent.buttons.accept')}
+                </Button>
               </Flexbox>
-            </Flexbox>
+            </form>
           </Flexbox>
-        </Card>
-      </Center>
-    );
-  },
-);
+        </Flexbox>
+      </Card>
+    </Center>
+  );
+});
 
 ConsentClient.displayName = 'ConsentClient';
 

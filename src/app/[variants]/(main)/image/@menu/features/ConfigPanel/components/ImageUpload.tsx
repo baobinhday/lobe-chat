@@ -1,7 +1,9 @@
 'use client';
 
+import { App } from 'antd';
 import { createStyles, useTheme } from 'antd-style';
 import { Image as ImageIcon, X } from 'lucide-react';
+import Image from 'next/image';
 import React, { type FC, memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Center } from 'react-layout-kit';
@@ -9,12 +11,21 @@ import { Center } from 'react-layout-kit';
 import { useFileStore } from '@/store/file';
 import { FileUploadStatus } from '@/types/files/upload';
 
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
+import { useUploadFilesValidation } from '../hooks/useUploadFilesValidation';
+import { useConfigPanelStyles } from '../style';
+
 // ======== Business Types ======== //
 
 export interface ImageUploadProps {
-  // Callback when URL changes
+  // Callback when URL changes - supports both old API (string) and new API (object with dimensions)
   className?: string; // Image URL
-  onChange?: (url?: string) => void;
+  maxFileSize?: number;
+  onChange?: (
+    data?:
+      | string // Old API: just URL
+      | { dimensions?: { height: number, width: number; }, url: string; }, // New API: URL with dimensions
+  ) => void;
   style?: React.CSSProperties;
   value?: string | null;
 }
@@ -100,11 +111,6 @@ const useStyles = createStyles(({ css, token }) => {
         background: ${token.colorErrorBg};
       }
     `,
-    imageStyle: css`
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    `,
     placeholder: css`
       cursor: pointer;
 
@@ -120,6 +126,12 @@ const useStyles = createStyles(({ css, token }) => {
       &:hover {
         border-color: ${token.colorPrimary};
         background: ${token.colorFillSecondary};
+      }
+
+      &.drag-over {
+        transform: scale(1.02);
+        border-color: ${token.colorPrimary};
+        background: ${token.colorPrimaryBg};
       }
     `,
     placeholderIcon: css`
@@ -140,9 +152,12 @@ const useStyles = createStyles(({ css, token }) => {
 
       width: 100%;
       height: 160px;
+      border: 2px solid transparent;
       border-radius: ${token.borderRadiusLG}px;
 
       background: ${token.colorBgContainer};
+
+      transition: all ${token.motionDurationMid} ease;
 
       &:hover .change-overlay {
         opacity: 1;
@@ -150,6 +165,12 @@ const useStyles = createStyles(({ css, token }) => {
 
       &:hover .delete-icon {
         opacity: 1;
+      }
+
+      &.drag-over {
+        transform: scale(1.02);
+        border-color: ${token.colorPrimary};
+        background: ${token.colorPrimaryBg};
       }
     `,
     uploadingDisplay: css`
@@ -283,20 +304,27 @@ CircularProgress.displayName = 'CircularProgress';
  * 占位视图组件
  */
 interface PlaceholderProps {
+  isDragOver?: boolean;
   onClick?: () => void;
 }
 
-const Placeholder: FC<PlaceholderProps> = memo(({ onClick }) => {
+const Placeholder: FC<PlaceholderProps> = memo(({ isDragOver, onClick }) => {
   const { styles } = useStyles();
+  const { styles: configStyles } = useConfigPanelStyles();
   const { t } = useTranslation('components');
 
   return (
-    <Center className={styles.placeholder} gap={16} horizontal={false} onClick={onClick}>
+    <Center
+      className={`${styles.placeholder} ${configStyles.dragTransition} ${isDragOver ? configStyles.dragOver : ''}`}
+      gap={16}
+      horizontal={false}
+      onClick={onClick}
+    >
       <ImageIcon className={styles.placeholderIcon} size={48} strokeWidth={1.5} />
       <div className={styles.placeholderText}>
-        {t('ImageUpload.placeholder.primary', 'Add Image')}
+        {t('ImageUpload.placeholder.primary')}
         <br />
-        {t('ImageUpload.placeholder.secondary', 'Click to upload')}
+        {t('ImageUpload.placeholder.secondary')}
       </div>
     </Center>
   );
@@ -317,7 +345,13 @@ const UploadingDisplay: FC<UploadingDisplayProps> = memo(({ previewUrl, progress
 
   return (
     <div className={styles.uploadingDisplay}>
-      <img alt="Uploading preview" className={styles.imageStyle} src={previewUrl} />
+      <Image
+        alt="Uploading preview"
+        fill
+        src={previewUrl}
+        style={{ objectFit: 'cover' }}
+        unoptimized
+      />
       <div className={styles.uploadingOverlay}>
         <CircularProgress value={progress} />
       </div>
@@ -332,172 +366,281 @@ UploadingDisplay.displayName = 'UploadingDisplay';
  */
 interface SuccessDisplayProps {
   imageUrl: string;
+  isDragOver?: boolean;
   onChangeImage?: () => void;
   onDelete?: () => void;
 }
 
-const SuccessDisplay: FC<SuccessDisplayProps> = memo(({ imageUrl, onDelete, onChangeImage }) => {
-  const { styles } = useStyles();
-  const { t } = useTranslation('components');
+const SuccessDisplay: FC<SuccessDisplayProps> = memo(
+  ({ imageUrl, isDragOver, onDelete, onChangeImage }) => {
+    const { styles } = useStyles();
+    const { styles: configStyles } = useConfigPanelStyles();
+    const { t } = useTranslation('components');
 
-  const handleDelete = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    onDelete?.();
-  };
+    const handleDelete = (event: React.MouseEvent) => {
+      event.stopPropagation();
+      onDelete?.();
+    };
 
-  const handleChangeImage = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    onChangeImage?.();
-  };
+    const handleChangeImage = (event: React.MouseEvent) => {
+      event.stopPropagation();
+      onChangeImage?.();
+    };
 
-  return (
-    <div className={styles.successDisplay} onClick={onChangeImage}>
-      <img alt="Uploaded image" className={styles.imageStyle} src={imageUrl} />
+    return (
+      <div
+        className={`${styles.successDisplay} ${configStyles.dragTransition} ${isDragOver ? configStyles.dragOver : ''}`}
+        onClick={onChangeImage}
+      >
+        <Image
+          alt="Uploaded image"
+          fill
+          src={imageUrl}
+          style={{ objectFit: 'cover' }}
+          unoptimized
+        />
 
-      {/* Delete button */}
-      <div className={`${styles.deleteIcon} delete-icon`} onClick={handleDelete}>
-        <X size={14} />
+        {/* Delete button */}
+        <div className={`${styles.deleteIcon} delete-icon`} onClick={handleDelete}>
+          <X size={14} />
+        </div>
+
+        {/* Change image overlay */}
+        <div className={`${styles.changeOverlay} change-overlay`} onClick={handleChangeImage}>
+          <button className={styles.changeButton} type="button">
+            {t('ImageUpload.actions.changeImage')}
+          </button>
+        </div>
       </div>
-
-      {/* Change image overlay */}
-      <div className={`${styles.changeOverlay} change-overlay`} onClick={handleChangeImage}>
-        <button className={styles.changeButton} type="button">
-          {t('ImageUpload.actions.changeImage', 'Click to change image')}
-        </button>
-      </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 SuccessDisplay.displayName = 'SuccessDisplay';
 
 // ======== Main Component ======== //
 
-const ImageUpload: FC<ImageUploadProps> = memo(({ value, onChange, style, className }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const uploadWithProgress = useFileStore((s) => s.uploadWithProgress);
-  const [uploadState, setUploadState] = useState<UploadState | null>(null);
+const ImageUpload: FC<ImageUploadProps> = memo(
+  ({ value, onChange, style, className, maxFileSize }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const uploadWithProgress = useFileStore((s) => s.uploadWithProgress);
+    const [uploadState, setUploadState] = useState<UploadState | null>(null);
+    const { t } = useTranslation('components');
+    const { message } = App.useApp();
+    const { validateFiles } = useUploadFilesValidation(undefined, maxFileSize);
 
-  // Cleanup blob URLs to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (uploadState?.previewUrl && isLocalBlobUrl(uploadState.previewUrl)) {
-        URL.revokeObjectURL(uploadState.previewUrl);
-      }
+    // Cleanup blob URLs to prevent memory leaks
+    useEffect(() => {
+      return () => {
+        if (uploadState?.previewUrl && isLocalBlobUrl(uploadState.previewUrl)) {
+          URL.revokeObjectURL(uploadState.previewUrl);
+        }
+      };
+    }, [uploadState?.previewUrl]);
+
+    const handleFileSelect = () => {
+      inputRef.current?.click();
     };
-  }, [uploadState?.previewUrl]);
 
-  const handleFileSelect = () => {
-    inputRef.current?.click();
-  };
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+      // Validate file using unified validation hook
+      if (!validateFiles([file])) return;
 
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
 
-    // Set initial upload state
-    setUploadState({
-      previewUrl,
-      progress: 0,
-      status: 'pending',
-    });
-
-    try {
-      // Start upload
-      const result = await uploadWithProgress({
-        file,
-        onStatusUpdate: (updateData) => {
-          if (updateData.type === 'updateFile') {
-            setUploadState((prev) => {
-              if (!prev) return null;
-
-              const fileStatus = updateData.value.status;
-              if (!fileStatus) return prev;
-
-              return {
-                ...prev,
-                error: fileStatus === 'error' ? 'Upload failed' : undefined,
-                progress: updateData.value.uploadState?.progress || 0,
-                status: fileStatus,
-              };
-            });
-          } else if (updateData.type === 'removeFile') {
-            // Handle file removal
-            setUploadState(null);
-          }
-        },
-        skipCheckFileType: true,
+      // Set initial upload state
+      setUploadState({
+        previewUrl,
+        progress: 0,
+        status: 'pending',
       });
 
-      if (result?.url) {
-        // Upload successful
-        onChange?.(result.url);
-      }
-    } catch {
-      // Upload failed
-      setUploadState((prev) =>
-        prev
-          ? {
-              ...prev,
-              error: 'Upload failed',
-              status: 'error',
+      try {
+        // Start upload
+        const result = await uploadWithProgress({
+          file,
+          onStatusUpdate: (updateData) => {
+            if (updateData.type === 'updateFile') {
+              setUploadState((prev) => {
+                if (!prev) return null;
+
+                const fileStatus = updateData.value.status;
+                if (!fileStatus) return prev;
+
+                return {
+                  ...prev,
+                  error: fileStatus === 'error' ? 'Upload failed' : undefined,
+                  progress: updateData.value.uploadState?.progress || 0,
+                  status: fileStatus,
+                };
+              });
+            } else if (updateData.type === 'removeFile') {
+              // Handle file removal
+              setUploadState(null);
             }
-          : null,
-      );
-    } finally {
-      // Cleanup
-      if (isLocalBlobUrl(previewUrl)) {
-        URL.revokeObjectURL(previewUrl);
+          },
+          skipCheckFileType: true,
+        });
+
+        if (result?.url) {
+          // Upload successful - pass dimensions if available
+          const callbackData = result.dimensions
+            ? { dimensions: result.dimensions, url: result.url }
+            : result.url;
+          onChange?.(callbackData);
+        }
+      } catch {
+        // Upload failed
+        setUploadState((prev) =>
+          prev
+            ? {
+                ...prev,
+                error: 'Upload failed',
+                status: 'error',
+              }
+            : null,
+        );
+      } finally {
+        // Cleanup
+        if (isLocalBlobUrl(previewUrl)) {
+          URL.revokeObjectURL(previewUrl);
+        }
+
+        // Clear upload state after a delay to show completion
+        setTimeout(() => {
+          setUploadState(null);
+        }, 1000);
+      }
+    };
+
+    const handleDelete = () => {
+      onChange?.(undefined);
+    };
+
+    const handleDrop = async (files: File[]) => {
+      // Show warning if multiple files detected
+      if (files.length > 1) {
+        message.warning(t('ImageUpload.actions.dropMultipleFiles'));
       }
 
-      // Clear upload state after a delay to show completion
-      setTimeout(() => {
-        setUploadState(null);
-      }, 1000);
-    }
-  };
+      // Take the first image file
+      const file = files[0];
 
-  const handleDelete = () => {
-    onChange?.(undefined);
-  };
+      // Validate file using unified validation hook
+      if (!validateFiles([file])) return;
 
-  // Determine which view to render
-  const hasImage = Boolean(value);
-  const isUploading = Boolean(uploadState);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
 
-  return (
-    <div className={className} style={style}>
-      {/* Hidden file input */}
-      <input
-        accept="image/*"
-        onChange={handleFileChange}
-        onClick={(e) => {
-          // Reset value to allow re-selecting the same file
-          e.currentTarget.value = '';
-        }}
-        ref={inputRef}
-        style={{ display: 'none' }}
-        type="file"
-      />
+      // Set initial upload state
+      setUploadState({
+        previewUrl,
+        progress: 0,
+        status: 'pending',
+      });
 
-      {/* Conditional rendering based on state */}
-      {isUploading && uploadState ? (
-        <UploadingDisplay previewUrl={uploadState.previewUrl} progress={uploadState.progress} />
-      ) : hasImage ? (
-        <SuccessDisplay
-          imageUrl={value!}
-          onChangeImage={handleFileSelect}
-          onDelete={handleDelete}
+      try {
+        // Start upload using the same logic as handleFileChange
+        const result = await uploadWithProgress({
+          file,
+          onStatusUpdate: (updateData) => {
+            if (updateData.type === 'updateFile') {
+              setUploadState((prev) => {
+                if (!prev) return null;
+
+                const fileStatus = updateData.value.status;
+                if (!fileStatus) return prev;
+
+                return {
+                  ...prev,
+                  error: fileStatus === 'error' ? 'Upload failed' : undefined,
+                  progress: updateData.value.uploadState?.progress || 0,
+                  status: fileStatus,
+                };
+              });
+            } else if (updateData.type === 'removeFile') {
+              setUploadState(null);
+            }
+          },
+          skipCheckFileType: true,
+        });
+
+        if (result?.url) {
+          // Upload successful - pass dimensions if available
+          const callbackData = result.dimensions
+            ? { dimensions: result.dimensions, url: result.url }
+            : result.url;
+          onChange?.(callbackData);
+        }
+      } catch {
+        // Upload failed
+        setUploadState((prev) =>
+          prev
+            ? {
+                ...prev,
+                error: 'Upload failed',
+                status: 'error',
+              }
+            : null,
+        );
+      } finally {
+        // Cleanup
+        if (isLocalBlobUrl(previewUrl)) {
+          URL.revokeObjectURL(previewUrl);
+        }
+
+        // Clear upload state after a delay to show completion
+        setTimeout(() => {
+          setUploadState(null);
+        }, 1000);
+      }
+    };
+
+    const { isDragOver, dragHandlers } = useDragAndDrop({
+      accept: 'image/*',
+      onDrop: handleDrop,
+    });
+
+    // Determine which view to render
+    const hasImage = Boolean(value);
+    const isUploading = Boolean(uploadState);
+
+    return (
+      <div className={className} {...dragHandlers} style={style}>
+        {/* Hidden file input */}
+        <input
+          accept="image/*"
+          onChange={handleFileChange}
+          onClick={(e) => {
+            // Reset value to allow re-selecting the same file
+            e.currentTarget.value = '';
+          }}
+          ref={inputRef}
+          style={{ display: 'none' }}
+          type="file"
         />
-      ) : (
-        <Placeholder onClick={handleFileSelect} />
-      )}
-    </div>
-  );
-});
+
+        {/* Conditional rendering based on state */}
+        {isUploading && uploadState ? (
+          <UploadingDisplay previewUrl={uploadState.previewUrl} progress={uploadState.progress} />
+        ) : hasImage ? (
+          <SuccessDisplay
+            imageUrl={value!}
+            isDragOver={isDragOver}
+            onChangeImage={handleFileSelect}
+            onDelete={handleDelete}
+          />
+        ) : (
+          <Placeholder isDragOver={isDragOver} onClick={handleFileSelect} />
+        )}
+      </div>
+    );
+  },
+);
 
 ImageUpload.displayName = 'ImageUpload';
 
